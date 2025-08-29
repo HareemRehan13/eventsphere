@@ -1,4 +1,5 @@
 import User from "../models/userModel.mjs";
+import Expo from "../models/ExpoModel.mjs"; // ✅ Expo model import
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -44,7 +45,6 @@ const loginUser = async (req, res) => {
       return res.status(404).json({ message: "User not found. Please register first." });
     }
 
-    // 🔑 Compare using model method
     const match = await checkUser.comparePassword(req.body.password);
 
     if (!match) {
@@ -77,8 +77,7 @@ const loginUser = async (req, res) => {
   }
 };
 
-
-// Auth middleware (Bearer)
+// Auth middleware
 const auth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -124,8 +123,7 @@ const sendEmail = async (req, res) => {
     const { email } = req.body;
 
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    // const verifyLink = `http://localhost:3000/verify?token=${token}`;
-const verifyLink = `http://localhost:5000/api/user/verify?token=${token}`;
+    const verifyLink = `http://localhost:5000/api/user/verify?token=${token}`;
 
     const transporter = nodemailer.createTransport({
       service: "Gmail",
@@ -219,6 +217,28 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+// ✅ View all expos
+const viewExpos = async (req, res) => {
+  try {
+    const expos = await Expo.find();
+    res.status(200).json({ expos });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch expos" });
+  }
+};
+
+// ✅ View user-specific expos (attended/registered)
+const viewUserExpos = async (req, res) => {
+  try {
+    const expos = await Expo.find({ attendees: req.user._id });
+    res.status(200).json({ expos });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch user's expos" });
+  }
+};
+
 const userController = {
   registerUser,
   loginUser,
@@ -227,6 +247,8 @@ const userController = {
   sendOtp,
   verifyOtp,
   auth,
+  viewExpos,       // ✅ added
+  viewUserExpos,   // ✅ added
 };
 
 export default userController;
