@@ -1,14 +1,15 @@
 import express from 'express';
 import eventController from '../controllers/EventController.mjs';
-import attendeeController from '../controllers/AttendeeController.mjs';
-import exhibitorController from '../controllers/ExhibitorController.mjs';
+import attendeeController from '../controllers/attendeeController.mjs';
+import exhibitorController from '../controllers/exhibitorController.mjs';
 import feedbackController from '../controllers/feedbackController.mjs';
 import notificationController from '../controllers/notificationController.mjs';
 import scheduleController from '../controllers/scheduleController.mjs';
 import ticketController from '../controllers/TicketController.mjs';
 import venueController from '../controllers/Venuecontroller.mjs';
 import userController from '../controllers/userController.mjs';
-
+import BoothController from '../controllers/boothController.mjs';
+import expoController from '..controllers/expoController.mjs';
 const router = express.Router();
 
 /** ---------------- User Routes ---------------- */
@@ -76,5 +77,18 @@ router.get("/venue/:id", venueController.getVenueById);
 router.post("/venue", userController.auth, venueController.createVenue);
 router.put("/venue/:id", userController.auth, venueController.updateVenue);
 router.delete("/venue/:id", userController.auth, venueController.deleteVenue);
+ // Expo routes
+app.post('/api/expos', expoController.createExpo); ///to create an Expo
+app.get('/api/expos', expoController.getAllExpos); //to get all Expos
+app.get('/api/expos/:expoId', expoController.getExpoById); /// to get a specific Expo by ID
+app.delete('/api/expos/:expoId', expoController.deleteExpo);
+app.put('/api/expos/:expoId', expoController.updateExpo); //to delete an Expo
 
+//Booth routes
+app.post('/api/booths', BoothController.addBooth);
+app.get('/api/booths', BoothController.getAllBooths);
+app.get('/api/booths/:expoId', BoothController.getBoothsByExpo);
+app.put('/api/booths/:boothId', BoothController.updateBooth);
+app.put('/api/boothBooked/:boothId', BoothController.BoothIsBooked);
+app.delete('/api/booths/:boothId', BoothController.deleteBooth);
 export default router;
