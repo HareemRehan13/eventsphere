@@ -1,5 +1,5 @@
 import User from "../models/userModel.mjs";
-import Expo from "../models/ExpoModel.mjs";
+import Expo from "../models/Expo.mjs";
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";

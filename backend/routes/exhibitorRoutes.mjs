@@ -8,8 +8,9 @@ import {
   createBooth,
   getBooths
 } from "../controllers/exhibitorController.mjs";
-import auth from "../middleware/auth.mjs";
-import requireRole from "../middleware/requireRole.mjs";
+import { auth, requireRole } from "../src/middleware/auth.js";
+
+// import requireRole from "../src/middleware/requireRole.mjs";
 
 const router = express.Router();
 

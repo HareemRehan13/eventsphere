@@ -7,8 +7,7 @@ import {
   deleteUser,
   viewExpos
 } from "../controllers/userController.mjs";
-import auth from "../middleware/auth.mjs";
-import requireRole from "../middleware/requireRole.mjs";
+import { auth, requireRole } from "../src/middleware/auth.js";
 
 const router = express.Router();
 

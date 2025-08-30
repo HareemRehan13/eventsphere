@@ -1,18 +1,12 @@
 import express from "express";
-import {
-  createAttendee,
-  getAttendees,
-  getAttendeeById,
-  updateAttendee,
-  deleteAttendee
-} from "../controllers/attendeeController.mjs";
+import attendeeController from "../controllers/AttendeeController.mjs";
 
 const router = express.Router();
 
-router.post("/", createAttendee);
-router.get("/", getAttendees);
-router.get("/:id", getAttendeeById);
-router.put("/:id", updateAttendee);
-router.delete("/:id", deleteAttendee);
+router.post("/", attendeeController.createAttendee);
+router.get("/", attendeeController.getAllAttendees);
+// router.get("/:id", attendeeController.getAttendeeById);
+router.put("/:id", attendeeController.updateAttendee);
+router.delete("/:id", attendeeController.deleteAttendee);
 
 export default router;

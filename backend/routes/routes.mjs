@@ -9,7 +9,7 @@ import ticketController from '../controllers/TicketController.mjs';
 import venueController from '../controllers/Venuecontroller.mjs';
 import userController from '../controllers/userController.mjs';
 import BoothController from '../controllers/boothController.mjs';
-import expoController from '..controllers/expoController.mjs';
+import expoController from '../controllers/expoController.mjs';
 const router = express.Router();
 
 /** ---------------- User Routes ---------------- */

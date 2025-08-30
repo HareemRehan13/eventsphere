@@ -1,6 +1,6 @@
 import express from "express";
-import { adminLogin, getAllUsers, deleteUser } from "../controllers/adminController.mjs";
-import { auth, requireRole } from "../middleware/auth.mjs";
+import { adminLogin } from "../controllers/adminController.mjs";
+import { auth, requireRole } from "../src/middleware/auth.js";
 
 const router = express.Router();
 
@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/login", adminLogin);
 
 // Ye routes sirf admin k liye accessible hain
-router.get("/users", auth, requireRole("admin"), getAllUsers);
-router.delete("/users/:id", auth, requireRole("admin"), deleteUser);
+// router.get("/users", auth, requireRole("admin"), getAllUsers);
+// router.delete("/users/:id", auth, requireRole("admin"), deleteUser);
 
 export default router;
