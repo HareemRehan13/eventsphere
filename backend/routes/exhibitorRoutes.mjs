@@ -1,21 +1,19 @@
 import express from "express";
 import boothController from "../controllers/BoothController.mjs";
-import exhibitorcontroller from "../controllers/ExhibitorController.mjs";
+import exhibitorController from "../controllers/ExhibitorController.mjs";
 import { auth, requireRole } from "../src/middleware/auth.js";
-
-// import requireRole from "../src/middleware/requireRole.mjs";
 
 const router = express.Router();
 
-// CRUD routes
-router.post("/",exhibitorcontroller.createExhibitor);
-router.get("/", exhibitorcontroller.getExhibitors);
-router.get("/:id", exhibitorcontroller.getExhibitorById);
-router.put("/:id", exhibitorcontroller.updateExhibitor);
-router.delete("/:id",exhibitorcontroller. deleteExhibitor);
+// CRUD routes for exhibitors
+router.post("/", exhibitorController.createExhibitor);
+router.get("/", exhibitorController.getExhibitors);
+router.get("/:id", exhibitorController.getExhibitorById);
+router.put("/:id", exhibitorController.updateExhibitor);
+router.delete("/:id", exhibitorController.deleteExhibitor);
 
-// Sirf exhibitor ko booth banane aur dekhne ki ijazat
-router.post("/booths", auth, requireRole("exhibitor"), addBooth);
-router.get("/booths", auth, requireRole("exhibitor"), getBooths);
+// Only exhibitors can create/view booths
+router.post("/booths", auth, requireRole("exhibitor"), boothController.addBooth);
+router.get("/booths", auth, requireRole("exhibitor"), boothController.getAllBooths);
 
 export default router;

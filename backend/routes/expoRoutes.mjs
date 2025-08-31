@@ -1,20 +1,21 @@
-const express = require("express");
+import express from "express";
+import expoController from "../controllers/ExpoController.mjs";
+
 const router = express.Router();
-import expoController from "../controllers/expoController";
 
 // Get all expos
-router.get("/", expoController.createExpo);
+router.get("/", expoController.getExpos);
 
 // Create a new expo
-router.post("/", expoController.updateExpo);
+router.post("/", expoController.createExpo);
 
-// Get a single expo by ID
-router.get("/:expoId", expoController.getAllExpos);
+// Request a booth
+router.post("/request-booth", expoController.requestBooth);
 
-// Update an expo by ID
-router.put("/:expoId", expoController.getExpoById);
+// Approve a booth
+router.put("/approve-booth/:boothId", expoController.approveBooth);
 
-// Delete an expo by ID
-router.delete("/:expoId", expoController.deleteExpo);
+// Reject a booth
+router.put("/reject-booth/:boothId", expoController.rejectBooth);
 
-module.exports = router;
+export default router;

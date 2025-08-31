@@ -3,20 +3,18 @@ import Expo from "../models/Expo.mjs";
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 // -------------------- SIGNUP --------------------
 const registerUser = async (req, res) => {
   try {
     const { username, email, password, role, profilePicture } = req.body;
 
-    // Check if user exists
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: "User already exists" });
 
-    // Role default to "User"
     const userRole = role || "User";
 
-    // Admin cannot signup via form
     if (userRole === "Admin") {
       return res.status(403).json({ message: "Admin cannot signup via form" });
     }
@@ -42,12 +40,11 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // ---------- Admin login ----------
     const ADMIN_EMAIL = "admin@example.com";
     const ADMIN_PASSWORD = "SuperSecretAdmin123";
 
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const token = jwt.sign({ email, role: "Admin" }, process.env.JWT_SECRET); // never expires
+      const token = jwt.sign({ email, role: "Admin" }, process.env.JWT_SECRET);
       return res.status(200).json({
         message: "Admin logged in successfully",
         user: { email, role: "Admin" },
@@ -55,7 +52,6 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // ---------- Normal User/Exhibitor login ----------
     const checkUser = await User.findOne({ email });
     if (!checkUser) return res.status(404).json({ message: "User not found" });
 
@@ -64,14 +60,13 @@ const loginUser = async (req, res) => {
 
     const { password: pwd, otp, otpExpiry, ...userWithoutPassword } = checkUser._doc;
 
-    // ✅ Token WITHOUT expiry
     const token = jwt.sign(
       { email: checkUser.email, _id: checkUser._id, role: checkUser.role },
       process.env.JWT_SECRET
     );
 
     res
-      .cookie("token", token, { httpOnly: true }) // optional
+      .cookie("token", token, { httpOnly: true })
       .status(200)
       .json({
         message: "User logged in successfully",
@@ -125,7 +120,7 @@ const changeActivationStatus = async (req, res) => {
 const sendEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    const token = jwt.sign({ email }, process.env.JWT_SECRET); // no expiry
+    const token = jwt.sign({ email }, process.env.JWT_SECRET);
     const verifyLink = `http://localhost:5000/api/user/verify?token=${token}`;
 
     const transporter = nodemailer.createTransport({
@@ -138,11 +133,10 @@ const sendEmail = async (req, res) => {
       to: email,
       subject: "Verify Your Account",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #fff; border-radius: 5px;">
-          <h2 style="color: #007BFF;">Verify Your Account</h2>
-          <p>Thanks for registering! Please verify your account by clicking the button below:</p>
-          <a href="${verifyLink}" style="display: inline-block; padding: 10px 20px; background: #007BFF; color: white; text-decoration: none; border-radius: 4px;">Verify My Account</a>
-          <p>If you did not register, please ignore this email.</p>
+        <div>
+          <h2>Verify Your Account</h2>
+          <p>Please verify your account by clicking the button below:</p>
+          <a href="${verifyLink}">Verify My Account</a>
         </div>
       `,
     });
@@ -207,6 +201,65 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+// -------------------- FORGOT PASSWORD --------------------
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 min
+    await user.save();
+
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+
+    await transporter.sendMail({
+      to: user.email,
+      subject: "Password Reset Request",
+      html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
+    });
+
+    res.json({ message: "Reset link sent to email" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// -------------------- RESET PASSWORD --------------------
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // -------------------- VIEW EXPOS --------------------
 const viewExpos = async (req, res) => {
   try {
@@ -237,6 +290,8 @@ const userController = {
   sendEmail,
   sendOtp,
   verifyOtp,
+  forgotPassword,
+  resetPassword,
   viewExpos,
   viewUserExpos,
 };

@@ -1,15 +1,17 @@
 import express from 'express';
 import eventController from '../controllers/EventController.mjs';
 import attendeeController from '../controllers/attendeeController.mjs';
-import exhibitorController from '../controllers/exhibitorController.mjs';
+import exhibitorController from '../controllers/ExhibitorController.mjs';
 import feedbackController from '../controllers/feedbackController.mjs';
 import notificationController from '../controllers/notificationController.mjs';
 import scheduleController from '../controllers/scheduleController.mjs';
 import ticketController from '../controllers/TicketController.mjs';
 import venueController from '../controllers/Venuecontroller.mjs';
 import userController from '../controllers/userController.mjs';
-import BoothController from '../controllers/boothController.mjs';
+import BoothController from '../controllers/BoothController.mjs';
 import expoController from '../controllers/expoController.mjs';
+import { auth, requireRole } from "../src/middleware/auth.js";
+
 const router = express.Router();
 
 /** ---------------- User Routes ---------------- */
@@ -31,7 +33,6 @@ router.delete("/event/:id", userController.auth, eventController.deleteEvent);
 
 /** ---------------- Attendee Routes ---------------- */
 router.get("/attendees", attendeeController.getAllAttendees);
-// router.get("/attendee/:id", attendeeController.getAttendeeById);
 router.post("/attendee", userController.auth, attendeeController.createAttendee);
 router.put("/attendee/:id", userController.auth, attendeeController.updateAttendee);
 router.delete("/attendee/:id", userController.auth, attendeeController.deleteAttendee);
@@ -77,18 +78,21 @@ router.get("/venue/:id", venueController.getVenueById);
 router.post("/venue", userController.auth, venueController.createVenue);
 router.put("/venue/:id", userController.auth, venueController.updateVenue);
 router.delete("/venue/:id", userController.auth, venueController.deleteVenue);
- // Expo routes
-app.post('/api/expos', expoController.createExpo); ///to create an Expo
-app.get('/api/expos', expoController.getAllExpos); //to get all Expos
-app.get('/api/expos/:expoId', expoController.getExpoById); /// to get a specific Expo by ID
-app.delete('/api/expos/:expoId', expoController.deleteExpo);
-app.put('/api/expos/:expoId', expoController.updateExpo); //to delete an Expo
 
-//Booth routes
-app.post('/api/booths', BoothController.addBooth);
-app.get('/api/booths', BoothController.getAllBooths);
-app.get('/api/booths/:expoId', BoothController.getBoothsByExpo);
-app.put('/api/booths/:boothId', BoothController.updateBooth);
-app.put('/api/boothBooked/:boothId', BoothController.BoothIsBooked);
-app.delete('/api/booths/:boothId', BoothController.deleteBooth);
+/** ---------------- Expo Routes ---------------- */
+router.post('/expo', userController.auth, expoController.createExpo);
+router.get('/expo', expoController.getExpos);
+router.get('/expo/:expoId', expoController.rejectBooth);
+router.post('/expo/request-booth', userController.auth, expoController.requestBooth);
+router.post('/expo/approve-booth/:boothId', userController.auth, expoController.approveBooth);
+
+/** ---------------- Booth Routes ---------------- */
+router.post('/booth', userController.auth, requireRole("admin", "exhibitor"), BoothController.addBooth);
+router.get('/booth', BoothController.getAllBooths);
+router.get('/booth/:expoId', BoothController.getBoothsByExpo);
+router.put('/booth/:boothId', userController.auth, requireRole("admin", "exhibitor"), BoothController.updateBooth);
+router.post('/booth/:boothId/book', userController.auth, requireRole("user"), BoothController.bookBooth);
+router.post('/booth/:boothId/approve', userController.auth, requireRole("admin"), BoothController.approveBooth);
+router.delete('/booth/:boothId', userController.auth, requireRole("admin", "exhibitor"), BoothController.deleteBooth);
+
 export default router;

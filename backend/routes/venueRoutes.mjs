@@ -1,18 +1,12 @@
 import express from "express";
-import {
-  createVenue,
-  getVenues,
-  getVenueById,
-  updateVenue,
-  deleteVenue
-} from "../controllers/Venuecontroller.mjs";
+import venueController from "../controllers/Venuecontroller.mjs";
 
 const router = express.Router();
 
-router.post("/", createVenue);
-router.get("/", getVenues);
-router.get("/:id", getVenueById);
-router.put("/:id", updateVenue);
-router.delete("/:id", deleteVenue);
+router.post("/",venueController.createVenue);
+router.get("/", venueController.getVenues);
+router.get("/:id", venueController.getVenueById);
+router.put("/:id", venueController.updateVenue);
+router.delete("/:id", venueController.deleteVenue);
 
 export default router;

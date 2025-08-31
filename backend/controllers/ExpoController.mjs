@@ -1,54 +1,17 @@
-const Expo = require("../Models/Expo");
-const Booth = require("../Models/Booth");
-const mongoose = require("mongoose");
+// controllers/expoController.js
+import Expo from "../models/Expo.mjs";
+import Booth from "../models/boothModel.mjs";
 
 // Create Expo
-const createExpo = async (req, res) => {
-  const { name, description, startDate, endDate, venue, organizerName, organizerContact, totalBooths, totalBoothsf2, totalBoothsf3 } = req.body;
-
-  //validations
-  if (!name || name.trim() === '') {
-    return res.status(400).json({ message: "Expo name is required" });
-  }
-  if (!description || description.trim() === '') {
-    return res.status(400).json({ message: "Description is required" });
-  }
-  if (!startDate || isNaN(Date.parse(startDate))) {
-    return res.status(400).json({ message: "Valid start date is required" });
-  }
-  if (!endDate || isNaN(Date.parse(endDate))) {
-    return res.status(400).json({ message: "Valid end date is required" });
-  }
-  if (new Date(startDate) > new Date(endDate)) {
-    return res.status(400).json({ message: "End date must be after the start date" });
-  }
-  const today = new Date();
-  if (new Date(startDate) < today || new Date(endDate) < today) {
-    return res.status(400).json({ message: "Event dates cannot be in the past" });
-  }
-  if (new Date(endDate).getFullYear() > 2025) {
-    return res.status(400).json({ message: "Event cannot be scheduled beyond 2025" });
-  }
-  if (!venue || venue.trim() === '') {
-    return res.status(400).json({ message: "Venue is required" });
-  }
-  if (!organizerName || organizerName.trim() === '') {
-    return res.status(400).json({ message: "Organizer name is required" });
-  }
-  if (!organizerContact || !/^\d{11,14}$/.test(organizerContact)) {
-    return res.status(400).json({ message: "Organizer contact must be between 11 and 14 digits" });
-  }  
-  if (!totalBooths || totalBooths < 1) {
-    return res.status(400).json({ message: "Total booths must be at least 1" });
-  }
-
+ const createExpo = async (req, res) => {
   try {
-    const existingExpo = await Expo.findOne({ name });
-    if (existingExpo) {
-      return res.status(400).json({ message: "Event with this name already exists" });
+    const { name, description, startDate, endDate, venue, organizerName, organizerContact, totalBooths } = req.body;
+
+    if (!name || !startDate || !endDate || !venue) {
+      return res.status(400).json({ message: "Required fields are missing" });
     }
 
-    const newExpo = await Expo.create({
+    const expo = new Expo({
       name,
       description,
       startDate,
@@ -57,169 +20,98 @@ const createExpo = async (req, res) => {
       organizerName,
       organizerContact,
       totalBooths,
-      totalBoothsf2,
-      totalBoothsf3
     });
 
-    const expoId = newExpo._id;
+    await expo.save();
 
-
-    const createBooths = async (count, floor, expoId) => {
-      const booths = [];
-      for (let i = 0; i < count; i++) {
-        let boothNumber;
-        let existingBoothNumber;
-        do {
-          boothNumber = Math.floor(1000 + Math.random() * 9000).toString();
-          existingBoothNumber = await Booth.findOne({ boothNumber });
-          if (existingBoothNumber) {
-            console.log(`Duplicate booth number detected: ${boothNumber}`);
-          }
-        } while (existingBoothNumber);
-      
-        booths.push({ boothNumber, expoId, floor });
-      }
-      try {
-        return await Booth.insertMany(booths);
-
-      } catch (error) {
-        console.error(`Error inserting booths for floor ${floor}:`, error);
-        throw new Error(`Failed to insert booths for floor ${floor}`);
-      }
-    };
-
-    const [createdBoothsF1, createdBoothsF2, createdBoothsF3] = await Promise.all([
-      createBooths(totalBooths, "F1", expoId),
-      totalBoothsf2 > 0 ? createBooths(totalBoothsf2, "F2", expoId) : [],
-      totalBoothsf3 > 0 ? createBooths(totalBoothsf3, "F3", expoId) : []
-    ]);
-
-    const allBoothIds = [
-      ...createdBoothsF1.map(booth => booth._id),
-      ...createdBoothsF2.map(booth => booth._id),
-      ...createdBoothsF3.map(booth => booth._id)
-    ];
-
-    newExpo.booths = allBoothIds;
-    await newExpo.save();
-
-    return res.status(201).json({ message: "Expo and booths created successfully", expo: newExpo });
+    res.status(201).json({
+      message: "Expo created successfully. Booths will be added after Admin approval.",
+      expo,
+    });
   } catch (error) {
     console.error("Error creating expo:", error);
-    return res.status(500).json({ message: "An error occurred while creating the expo", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-const updateExpo = async (req, res) => {
-  const { expoId } = req.params;
-  const { name, description, startDate, endDate, venue, organizerName, organizerContact } = req.body;
-  console.table({ expoId, name, description, startDate, endDate, venue, organizerName, organizerContact });
-
-  if (!mongoose.Types.ObjectId.isValid(expoId)) {
-    return res.status(400).json({ message: "Invalid expo ID" });
-  }
-
+// Get All Expos
+export const getExpos = async (req, res) => {
   try {
+    const expos = await Expo.find().populate("booths");
+    res.status(200).json(expos);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Request Booth (user side)
+export const requestBooth = async (req, res) => {
+  try {
+    const { expoId, boothNumber, userId } = req.body;
+
     const expo = await Expo.findById(expoId);
-    if (!expo) {
-      return res.status(404).json({ message: "Expo not found" });
-    }
+    if (!expo) return res.status(404).json({ message: "Expo not found" });
 
-    if (name && name !== expo.name) {
-      const existingExpo = await Expo.findOne({ name });
-      if (existingExpo) {
-        return res.status(400).json({ message: "Event with this name already exists" });
-      }
-    }
+    // Booth request create karega but status = pending
+    const booth = new Booth({
+      expo: expoId,
+      boothNumber,
+      requestedBy: userId,
+      status: "pending", // admin approve/reject karega
+    });
 
-
-    if (startDate && endDate) {
-      if (new Date(startDate) > new Date(endDate)) {
-        return res.status(400).json({ message: "End date must be after the start date" });
-      }
-      const today = new Date();
-      if (new Date(startDate) < today || new Date(endDate) < today) {
-        return res.status(400).json({ message: "Event dates cannot be in the past" });
-      }
-      if (new Date(endDate).getFullYear() > 2026) {
-        return res.status(400).json({ message: "Event cannot be scheduled beyond 2026" });
-      }
-    }
-
-    expo.name = name || expo.name;
-    expo.description = description || expo.description;
-    expo.startDate = startDate || expo.startDate;
-    expo.endDate = endDate || expo.endDate;
-    expo.venue = venue || expo.venue;
-    expo.organizerName = organizerName || expo.organizerName;
-    expo.organizerContact = organizerContact || expo.organizerContact;
-
+    await booth.save();
+    expo.booths.push(booth._id);
     await expo.save();
-    console.log("Expo updated successfully:", expo);
-    return res.status(200).json({ message: "Expo updated successfully", expo });
+
+    res.status(201).json({ message: "Booth request submitted. Awaiting Admin approval.", booth });
   } catch (error) {
-    console.error("Error updating expo:", error);
-    return res.status(500).json({ message: "An error occurred while updating the expo", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-
-const getAllExpos = async (req, res) => {
+// Admin Approve Booth
+export const approveBooth = async (req, res) => {
   try {
-    const expos = await Expo.find().populate("booths").sort({ startDate: -1 });
-    return res.status(200).json(expos);
+    const { boothId } = req.params;
+    const booth = await Booth.findById(boothId);
+
+    if (!booth) return res.status(404).json({ message: "Booth not found" });
+
+    booth.status = "approved";
+    await booth.save();
+
+    res.status(200).json({ message: "Booth approved successfully", booth });
   } catch (error) {
-    return res.status(500).json({ message: "An error occurred while fetching expos", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-
-const getExpoById = async (req, res) => {
-  const { expoId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(expoId)) {
-    return res.status(400).json({ message: "Invalid expo ID" });
-  }
-
+// Admin Reject Booth
+export const rejectBooth = async (req, res) => {
   try {
-    const expo = await Expo.findById(expoId).populate("booths");
-    if (!expo) {
-      return res.status(404).json({ message: "Expo not found" });
-    }
-    return res.status(200).json(expo);
+    const { boothId } = req.params;
+    const booth = await Booth.findById(boothId);
+
+    if (!booth) return res.status(404).json({ message: "Booth not found" });
+
+    booth.status = "rejected";
+    await booth.save();
+
+    res.status(200).json({ message: "Booth rejected", booth });
   } catch (error) {
-    return res.status(500).json({ message: "An error occurred while fetching the expo", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
-
-
-const deleteExpo = async (req, res) => {
-  const { expoId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(expoId)) {
-    return res.status(400).json({ message: "Invalid expo ID" });
-  }
-
-  try {
-    const deletedExpo = await Expo.findByIdAndDelete(expoId);
-
-    if (!deletedExpo) {
-      return res.status(404).json({ message: "Expo not found" });
-    }
-
-    await Booth.deleteMany({ expoId });
-
-    return res.status(200).json({ message: "Expo deleted successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: "An error occurred while deleting the expo", error: error.message });
-  }
-};
-
 const expoController = {
-  createExpo,
-  updateExpo,
-  getAllExpos,
-  getExpoById,
-  deleteExpo,
-};
+createExpo,
+rejectBooth,
+getExpos,
+requestBooth,
+approveBooth,
+}
 export default expoController;
+// User expo banata hai (expoController → createExpo).
+// Exhibitor booth request karega (requestBooth).
+// Booth ki status default pending rahegi.
+// Admin panel se approve/reject kiya jaega (approveBooth ya rejectBooth).

@@ -1,24 +1,43 @@
 import express from "express";
-import {
-  createUser,
-  getUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
-  viewExpos
-} from "../controllers/userController.mjs";
+import userController from "../controllers/userController.mjs";
 import { auth, requireRole } from "../src/middleware/auth.js";
 
 const router = express.Router();
 
-// CRUD routes
-router.post("/", createUser);
-router.get("/", getUsers);
-router.get("/:id", getUserById);
-router.put("/:id", updateUser);
-router.delete("/:id", deleteUser);
+// -------------------- AUTH ROUTES --------------------
 
-// Sirf "user" role wale expos dekh sakte hain
-router.get("/expos", auth, requireRole("user"), viewExpos);
+// Register a new user
+router.post("/register", userController.registerUser);
+
+// Login user or admin
+router.post("/login", userController.loginUser);
+
+// Send email verification link
+router.post("/send-email", userController.sendEmail);
+
+// Send OTP
+router.post("/send-otp", userController.sendOtp);
+
+// Verify OTP
+router.post("/verify-otp", userController.verifyOtp);
+
+// Forgot password
+router.post("/forgot-password", userController.forgotPassword);
+
+// Reset password
+router.post("/reset-password/:token", userController.resetPassword);
+
+// -------------------- USER MANAGEMENT --------------------
+
+// Change activation status (admin only)
+router.put("/status/:userId/:status", auth, requireRole("Admin"), userController.changeActivationStatus);
+
+// -------------------- EXPO VIEW --------------------
+
+// View all expos (authenticated users only)
+router.get("/expos", auth, userController.viewExpos);
+
+// View expos specific to logged-in user
+router.get("/my-expos", auth, userController.viewUserExpos);
 
 export default router;

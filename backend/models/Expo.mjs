@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const expoSchema = new mongoose.Schema({
   name: { 
@@ -53,4 +53,6 @@ const expoSchema = new mongoose.Schema({
   }]
 });
 
-module.exports = mongoose.model("Expo", expoSchema);
+// module.exports = mongoose.model("Expo", expoSchema);
+const Expo = mongoose.model("Expo", expoSchema);
+export default Expo;
