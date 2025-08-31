@@ -215,10 +215,11 @@ const deleteExpo = async (req, res) => {
   }
 };
 
-module.exports = {
+const expoController = {
   createExpo,
   updateExpo,
   getAllExpos,
   getExpoById,
   deleteExpo,
 };
+export default expoController;

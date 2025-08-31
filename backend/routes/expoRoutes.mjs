@@ -1,20 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const ExpoController = require("../controllers/expoController");
+import expoController from "../controllers/expoController";
 
 // Get all expos
-router.get("/", ExpoController.getAllExpos);
+router.get("/", expoController.createExpo);
 
 // Create a new expo
-router.post("/", ExpoController.createExpo);
+router.post("/", expoController.updateExpo);
 
 // Get a single expo by ID
-router.get("/:expoId", ExpoController.getExpoById);
+router.get("/:expoId", expoController.getAllExpos);
 
 // Update an expo by ID
-router.put("/:expoId", ExpoController.updateExpo);
+router.put("/:expoId", expoController.getExpoById);
 
 // Delete an expo by ID
-router.delete("/:expoId", ExpoController.deleteExpo);
+router.delete("/:expoId", expoController.deleteExpo);
 
 module.exports = router;

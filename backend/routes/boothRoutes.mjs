@@ -1,18 +1,14 @@
 import express from "express";
-import {
-  createBooth,
-  getBooths,
-  getBoothById,
-  updateBooth,
-  deleteBooth
-} from "../controllers/boothController.mjs";
+import boothController from "../controllers/BoothController.mjs";
+
 
 const router = express.Router();
 
-router.post("/", createBooth);
-router.get("/", getBooths);
-router.get("/:id", getBoothById);
-router.put("/:id", updateBooth);
-router.delete("/:id", deleteBooth);
+router.post("/",boothController.addBooth);
+router.get("/", boothController.getAllBooths);
+router.get("/:id",boothController.getBoothsByExpo);
+router.put("/:id",boothController.updateBooth);
+router.delete("/:id", boothController.deleteBooth);
+router.delete("/:id", boothController.BoothIsBooked);
 
 export default router;

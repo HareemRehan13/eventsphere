@@ -154,7 +154,7 @@ const deleteBooth = async (req, res) => {
   }
 };
 
-module.exports = {
+const boothController = {
   addBooth,
   getAllBooths,
   getBoothsByExpo,
@@ -162,3 +162,4 @@ module.exports = {
   deleteBooth,
   BoothIsBooked
 };
+export default boothController;

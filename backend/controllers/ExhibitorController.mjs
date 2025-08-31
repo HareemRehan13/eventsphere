@@ -1,6 +1,5 @@
 import Exhibitor from "../models/ExhibitorModel.mjs";
-
-export const getExhibitors = async (req, res) => {
+ const getExhibitors = async (req, res) => {
   try {
     const exhibitors = await Exhibitor.find();
     res.status(200).json(exhibitors);
@@ -9,7 +8,7 @@ export const getExhibitors = async (req, res) => {
   }
 };
 
-export const createExhibitor = async (req, res) => {
+ const createExhibitor = async (req, res) => {
   try {
     const exhibitor = new Exhibitor(req.body);
     await exhibitor.save();
@@ -19,7 +18,7 @@ export const createExhibitor = async (req, res) => {
   }
 };
 
-export const getExhibitorById = async (req, res) => {
+ const getExhibitorById = async (req, res) => {
   try {
     const exhibitor = await Exhibitor.findById(req.params.id);
     if (!exhibitor) return res.status(404).json({ message: "Exhibitor not found" });
@@ -29,7 +28,7 @@ export const getExhibitorById = async (req, res) => {
   }
 };
 
-export const updateExhibitor = async (req, res) => {
+ const updateExhibitor = async (req, res) => {
   try {
     const exhibitor = await Exhibitor.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(exhibitor);
@@ -38,7 +37,7 @@ export const updateExhibitor = async (req, res) => {
   }
 };
 
-export const deleteExhibitor = async (req, res) => {
+ const deleteExhibitor = async (req, res) => {
   try {
     await Exhibitor.findByIdAndDelete(req.params.id);
     res.json({ message: "Exhibitor deleted successfully" });

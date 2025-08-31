@@ -1,18 +1,12 @@
 import express from "express";
-import {
-  createTicket,
-  getTickets,
-  getTicketById,
-  updateTicket,
-  deleteTicket
-} from "../controllers/TicketController.mjs";
+import ticketController from "../controllers/TicketController.mjs";
 
 const router = express.Router();
 
-router.post("/", createTicket);
-router.get("/", getTickets);
-router.get("/:id", getTicketById);
-router.put("/:id", updateTicket);
-router.delete("/:id", deleteTicket);
+router.post("/",ticketController.createTicket);
+router.get("/", ticketController.getTickets);
+router.get("/:id", ticketController.getTicketById);
+router.put("/:id", ticketController.updateTicket);
+router.delete("/:id", ticketController.deleteTicket);
 
 export default router;
