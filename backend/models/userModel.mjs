@@ -32,11 +32,12 @@ const userSchema = new Schema(
       default: "",
     },
 
-    role: {
-      type: String,
-      enum: ["user", "admin"],
-      default: "user",
-    },
+   role: {
+  type: String,
+  enum: ["attendee", "exhibitor", "admin"],
+  default: "attendee",
+},
+
 
     isVerified: {
       type: Boolean,

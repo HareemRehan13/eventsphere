@@ -1,43 +1,30 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
-import OrganizerDashboard from "./admin/views/Dashboard/Dashboard.jsx";
-import AttendeeHome from "./user/pages/Home.jsx"; 
-
-function PrivateRoute({ children, roles }) {
-  const { user } = useAuth();
-  return user && roles.includes(user.role) ? children : <Navigate to="/login" />;
-}
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import AttendeeHome from "./user/pages/Home.jsx";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/login" element={<Login />} />
+    <>
+      <Routes>
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-      {/* Organizer */}
-      <Route
-        path="/organizer/dashboard"
-        element={
-          <PrivateRoute roles={['organizer']}>
-            <OrganizerDashboard />
-          </PrivateRoute>
-        }
-      />
+        {/* Example private route */}
+        <Route path="/attendee/home" element={<AttendeeHome />} />
 
-      {/* Attendee */}
-      <Route
-        path="/attendee/home"
-        element={
-          <PrivateRoute roles={['attendee']}>
-            <AttendeeHome />
-          </PrivateRoute>
-        }
-      />
+        {/* fallback */}
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/login" />} />
-    </Routes>
+      <ToastContainer />
+    </>
   );
 }

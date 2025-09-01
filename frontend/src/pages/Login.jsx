@@ -1,58 +1,88 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../lib/api';
-import { useAuth } from '../context/AuthContext.jsx';
+import React, { useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom"; // navigation ke liye
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [err, setErr] = useState('');
-  const nav = useNavigate();
-  const { login } = useAuth();
+const Login = ({ onLogin }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const submit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setErr('');
-    try {
-      const data = await api('/auth/login', { method: 'POST', body: { email, password } });
-      login(data);
 
-      // Role-based redirection
-      if (data.role === 'organizer') {
-        nav('/organizer/dashboard');
-      } else if (data.role === 'attendee') {
-        nav('/attendee/home');
-      } 
-      // else if(data.role === 'exhibitor') nav('/exhibitor/dashboard');
-      else nav('/login'); // fallback
-    } catch (e) {
-      setErr(e.message);
+    try {
+      const res = await axios.post("http://localhost:5000/api/users/login", {
+        email,
+        password,
+      });
+
+      // Backend se user + token
+      const { token, user } = res.data;
+
+      // localStorage me save
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+
+      // Parent ko inform karne ke liye
+      if (onLogin) {
+        onLogin(user);
+      }
+
+      setError("");
+      alert("✅ Login successful!");
+    } catch (err) {
+      console.error(err);
+      setError("❌ Invalid email or password");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-3 p-6 rounded-2xl border">
-        <h1 className="text-2xl font-semibold">Welcome back</h1>
-        {err && <div className="text-red-600 text-sm">{err}</div>}
+    <div style={{ maxWidth: "400px", margin: "auto", textAlign: "center" }}>
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit}>
         <input
-          className="w-full border p-2 rounded"
-          placeholder="Email"
+          type="email"
+          placeholder="Enter email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          style={{ width: "100%", margin: "8px 0", padding: "8px" }}
         />
+        <br />
         <input
-          className="w-full border p-2 rounded"
           type="password"
-          placeholder="Password"
+          placeholder="Enter password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          style={{ width: "100%", margin: "8px 0", padding: "8px" }}
         />
-        <button className="w-full bg-black text-white py-2 rounded">Login</button>
-        <div className="text-sm">
-          No account? <Link className="underline" to="/signup">Create one</Link>
-        </div>
+        <br />
+        <button
+          type="submit"
+          style={{
+            width: "100%",
+            padding: "10px",
+            background: "#4CAF50",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Login
+        </button>
       </form>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      <div style={{ marginTop: "15px" }}>
+        <Link to="/forgot-password">Forgot Password?</Link>
+        <br />
+        <span>Don’t have an account? </span>
+        <Link to="/signup">Sign up here</Link>
+      </div>
     </div>
   );
-}
+};
+
+export default Login;

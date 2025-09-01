@@ -1,5 +1,7 @@
 import User from "../models/userModel.mjs";
 import Expo from "../models/Expo.mjs";
+import Attendee from "../models/AttendeeModel.mjs";
+import Exhibitor from "../models/ExhibitorModel.mjs";
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -8,31 +10,72 @@ import crypto from "crypto";
 // -------------------- SIGNUP --------------------
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password, role, profilePicture } = req.body;
+    const { username, email, password, role, profilePicture, phone, companyName, boothNumber } = req.body;
 
+    // validation
     if (!username || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: "User already exists" });
+    let existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: "User already exists" });
 
-    const userRole = role ? role.toLowerCase() : "user";
+    const userRole = role ? role.toLowerCase() : "attendee"; // default attendee
 
     if (userRole === "admin") {
       return res.status(403).json({ message: "Admin cannot signup via form" });
     }
 
+    // ✅ hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // ✅ Create user first
     const newUser = new User({
       username,
       email,
-      password,
+      password: hashedPassword,
       role: userRole,
       profilePicture,
     });
 
     const savedUser = await newUser.save();
-    res.status(201).json({ message: "User registered successfully", user: savedUser });
+
+    // ✅ Create Attendee if role = attendee
+    if (userRole === "attendee") {
+      await Attendee.create({
+        user: savedUser._id,
+        name: username,
+        email,
+        phone,
+        events: [], // optional, default empty
+      });
+    }
+
+    // ✅ Create Exhibitor if role = exhibitor
+    if (userRole === "exhibitor") {
+      if (!companyName || !boothNumber) {
+        return res.status(400).json({ message: "Company name and Booth number are required for Exhibitor" });
+      }
+      await Exhibitor.create({
+        user: savedUser._id,
+        companyName,
+        boothNumber,
+        products: [],
+        events: [],
+      });
+    }
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        _id: savedUser._id,
+        username: savedUser.username,
+        email: savedUser.email,
+        role: savedUser.role,
+      },
+    });
+
   } catch (error) {
     console.error("Register Error:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
@@ -60,7 +103,8 @@ const loginUser = async (req, res) => {
     const checkUser = await User.findOne({ email });
     if (!checkUser) return res.status(404).json({ message: "User not found" });
 
-    const match = await checkUser.comparePassword(password);
+    // ✅ compare hashed password
+    const match = await bcrypt.compare(password, checkUser.password);
     if (!match) return res.status(401).json({ message: "Invalid credentials" });
 
     const { password: pwd, otp, otpExpiry, ...userWithoutPassword } = checkUser._doc;
@@ -165,7 +209,7 @@ const sendOtp = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const expiry = new Date(Date.now() + 1 * 60 * 1000);
+    const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
     user.otp = otp;
     user.otpExpiry = expiry;
@@ -180,7 +224,7 @@ const sendOtp = async (req, res) => {
       from: `"HN Solutions" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Your OTP Code",
-      html: `<p>Your OTP is: <b>${otp}</b></p><p>This code will expire in 1 minute.</p>`,
+      html: `<p>Your OTP is: <b>${otp}</b></p><p>This OTP will expire in 5 minutes.</p>`,
     });
 
     res.status(200).json({ message: "OTP sent to email" });
@@ -197,8 +241,9 @@ const verifyOtp = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
+
     if (user.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
-    if (user.otpExpiry < new Date()) return res.status(400).json({ message: "OTP expired" });
+    if (!user.otpExpiry || user.otpExpiry < new Date()) return res.status(400).json({ message: "OTP expired" });
 
     user.isVerified = true;
     user.otp = undefined;
@@ -223,7 +268,7 @@ const forgotPassword = async (req, res) => {
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 min
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
     await user.save();
 
     const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
