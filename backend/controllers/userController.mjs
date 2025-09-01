@@ -266,28 +266,43 @@ const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    console.log("Sending reset email to:", user.email); // debug
+
+    // Generate a raw token and hash it for storage
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
     await user.save();
 
+    // Construct reset URL with raw token (sent in email)
     const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
 
+    // Send email with reset link
     const transporter = nodemailer.createTransport({
       service: "Gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
     });
 
-    await transporter.sendMail({
-      to: user.email,
-      subject: "Password Reset Request",
-      html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"HN Solutions" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Password Reset Request",
+        html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>
+               <p>This link will expire in 15 minutes.</p>`,
+      });
+    } catch (emailErr) {
+      console.error("Nodemailer Error:", emailErr);
+      return res.status(500).json({ message: "Failed to send reset email. Check email credentials." });
+    }
 
-    res.json({ message: "Reset link sent to email" });
+    res.status(200).json({ message: "Reset link sent to email" });
   } catch (err) {
-    console.error("Forgot Password Error:", err.message || err);
-    res.status(500).json({ message: "Failed to send reset link" });
+    console.error("Forgot Password Error:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -299,23 +314,26 @@ const resetPassword = async (req, res) => {
 
     if (!token || !password) return res.status(400).json({ message: "Token and password required" });
 
+    // Hash the token to match database
     const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
       resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
+      resetPasswordExpire: { $gt: Date.now() }, // check token expiry
     });
 
     if (!user) return res.status(400).json({ message: "Invalid or expired token" });
 
+    // Hash new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
 
+    // Clear reset token fields
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
 
-    res.json({ message: "Password reset successful" });
+    res.status(200).json({ message: "Password reset successful" });
   } catch (err) {
     console.error("Reset Password Error:", err.message || err);
     res.status(500).json({ message: "Failed to reset password" });

@@ -1,14 +1,20 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom"; // navigation ke liye
+import { Link, useNavigate } from "react-router-dom";
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // optional loader
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    console.log("Login button clicked", { email, password });
+    setLoading(true);
+    setError("");
 
     try {
       const res = await axios.post("http://localhost:5000/api/users/login", {
@@ -16,23 +22,32 @@ const Login = ({ onLogin }) => {
         password,
       });
 
-      // Backend se user + token
-      const { token, user } = res.data;
+      console.log("Login response:", res.data);
 
-      // localStorage me save
+      // Adjust this based on your backend response
+      // Example: { success: true, user: {...}, token: "..." }
+      const user = res.data.user || (res.data.data && res.data.data.user);
+      const token = res.data.token || (res.data.data && res.data.data.token);
+
+      if (!user || !token) {
+        setError("Login failed: invalid response from server");
+        setLoading(false);
+        return;
+      }
+
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", token);
 
-      // Parent ko inform karne ke liye
-      if (onLogin) {
-        onLogin(user);
-      }
+      if (onLogin) onLogin(user);
 
       setError("");
-      alert("✅ Login successful!");
+      setLoading(false);
+
+      navigate("/"); // redirect to Home
     } catch (err) {
-      console.error(err);
-      setError("❌ Invalid email or password");
+      console.error("Login error:", err.response || err);
+      setError(err.response?.data?.message || "❌ Invalid email or password");
+      setLoading(false);
     }
   };
 
@@ -68,12 +83,13 @@ const Login = ({ onLogin }) => {
             border: "none",
             cursor: "pointer",
           }}
+          disabled={loading}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
 
       <div style={{ marginTop: "15px" }}>
         <Link to="/forgot-password">Forgot Password?</Link>

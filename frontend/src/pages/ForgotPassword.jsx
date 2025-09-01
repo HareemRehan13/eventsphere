@@ -8,6 +8,7 @@ const ForgotPassword = ({ onOtpSent }) => {
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
+
     if (!email) {
       toast.error("Please enter your email");
       return;
@@ -15,13 +16,22 @@ const ForgotPassword = ({ onOtpSent }) => {
 
     try {
       setLoading(true);
-      const res = await axios.post("http://localhost:5000/api/users/forgot-password", { email });
 
-      toast.success(res.data.message || "OTP sent to your email!");
-      if (onOtpSent) onOtpSent(email); // optional
+      const res = await axios.post(
+        "http://localhost:5000/api/users/forgot-password",
+        { email }
+      );
+
+      toast.success(res.data.message || "Reset link sent to your email!");
+      
+      // optional callback if parent component wants to know
+      if (onOtpSent) onOtpSent(email);
+
+      // clear input after success
+      setEmail("");
 
     } catch (err) {
-      console.error(err);
+      console.error("Forgot Password Error:", err);
       toast.error(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
@@ -39,13 +49,14 @@ const ForgotPassword = ({ onOtpSent }) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
           />
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
           >
-            {loading ? "Sending OTP..." : "Send OTP"}
+            {loading ? "Sending..." : "Send Reset Link"}
           </button>
         </form>
       </div>

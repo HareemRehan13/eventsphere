@@ -5,6 +5,7 @@ const { Schema } = mongoose;
 
 const userSchema = new Schema(
   {
+    // -------------------- BASIC INFO --------------------
     username: {
       type: String,
       required: true,
@@ -32,13 +33,13 @@ const userSchema = new Schema(
       default: "",
     },
 
-   role: {
-  type: String,
-  enum: ["attendee", "exhibitor", "admin"],
-  default: "attendee",
-},
+    role: {
+      type: String,
+      enum: ["attendee", "exhibitor",  "admin"],
+      default: "attendee",
+    },
 
-
+    // -------------------- ACCOUNT STATUS --------------------
     isVerified: {
       type: Boolean,
       default: false,
@@ -49,6 +50,7 @@ const userSchema = new Schema(
       default: true,
     },
 
+    // -------------------- OTP --------------------
     otp: {
       type: String,
       default: null,
@@ -59,7 +61,7 @@ const userSchema = new Schema(
       default: null,
     },
 
-    // ✅ Password reset fields
+    // -------------------- FORGOT / RESET PASSWORD --------------------
     resetPasswordToken: {
       type: String,
       default: null,
@@ -69,15 +71,31 @@ const userSchema = new Schema(
       type: Date,
       default: null,
     },
+
+    // -------------------- ADDITIONAL FIELDS --------------------
+    phone: {
+      type: String,
+      default: null,
+    },
+
+    companyName: {
+      type: String,
+      default: null,
+    },
+
+    boothNumber: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// ✅ password hash before saving
+// -------------------- PASSWORD HASH --------------------
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next(); // agar password change nai hua to skip
+  if (!this.isModified("password")) return next();
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -87,11 +105,11 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// ✅ compare password method
+// -------------------- PASSWORD COMPARE --------------------
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// -------------------- EXPORT --------------------
 const User = mongoose.model("User", userSchema);
-
 export default User;
