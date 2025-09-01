@@ -1,104 +1,91 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { api } from "../lib/api";
-import { useAuth } from "../context/AuthContext.jsx";
+import React, { useState } from "react";
+import axios from "axios";
 
-export default function Signup() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Attendee");
-  const [err, setErr] = useState("");
-  const { login } = useAuth();
-  const nav = useNavigate();
+const SignupForm = () => {
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    role: "User", // default
+  });
 
-  const submit = async (e) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setErr("");
+    setLoading(true);
+    setMessage("");
+    setError("");
+
     try {
-      const data = await api("/auth/signup", {
-        method: "POST",
-        body: { name, email, password, role },
-      });
-
-      // Token save + auth context update
-      login(data);
-
-      nav("/dashboard");
-    } catch (e) {
-      setErr(e.message || "Signup failed");
+      const res = await axios.post("http://localhost:5000/api/user/register", formData);
+      setMessage(res.data.message); // "User registered successfully"
+      setFormData({ username: "", email: "", password: "", role: "User" });
+    } catch (err) {
+      console.error("Signup Error:", err.response || err);
+      if (err.response) {
+        // Backend sent an error response
+        setError(err.response.data.message || "Something went wrong");
+      } else {
+        setError("Network error. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-sm space-y-4 p-6 rounded-2xl border bg-white shadow"
-      >
-        <h1 className="text-2xl font-semibold">Create account</h1>
+    <div style={{ maxWidth: "400px", margin: "auto", padding: "20px" }}>
+      <h2>Signup</h2>
+      {message && <p style={{ color: "green" }}>{message}</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-        {err && <p className="text-red-600 text-sm">{err}</p>}
-
+      <form onSubmit={handleSubmit}>
         <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
+          <label>Username:</label>
           <input
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
             required
-            className="w-full border rounded-lg p-2 focus:outline-none focus:ring focus:ring-indigo-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label>Email:</label>
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
             required
-            className="w-full border rounded-lg p-2 focus:outline-none focus:ring focus:ring-indigo-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
+          <label>Password:</label>
           <input
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
             required
-            className="w-full border rounded-lg p-2 focus:outline-none focus:ring focus:ring-indigo-500"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Role</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full border rounded-lg p-2 focus:outline-none focus:ring focus:ring-indigo-500"
-          >
-            <option value="Attendee">Attendee</option>
-            <option value="Organizer">Organizer</option>
-          </select>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-indigo-600 text-white rounded-lg p-2 font-medium hover:bg-indigo-700 transition"
-        >
-          Sign up
+        <button type="submit" disabled={loading}>
+          {loading ? "Registering..." : "Signup"}
         </button>
-
-        <p className="text-sm text-center">
-          Already have an account?{" "}
-          <Link to="/login" className="text-indigo-600 hover:underline">
-            Login
-          </Link>
-        </p>
       </form>
     </div>
   );
-}
+};
+
+export default SignupForm;

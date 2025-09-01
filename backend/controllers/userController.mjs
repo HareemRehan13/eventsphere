@@ -10,12 +10,16 @@ const registerUser = async (req, res) => {
   try {
     const { username, email, password, role, profilePicture } = req.body;
 
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: "User already exists" });
 
-    const userRole = role || "User";
+    const userRole = role ? role.toLowerCase() : "user";
 
-    if (userRole === "Admin") {
+    if (userRole === "admin") {
       return res.status(403).json({ message: "Admin cannot signup via form" });
     }
 
@@ -30,7 +34,7 @@ const registerUser = async (req, res) => {
     const savedUser = await newUser.save();
     res.status(201).json({ message: "User registered successfully", user: savedUser });
   } catch (error) {
-    console.error(error);
+    console.error("Register Error:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -39,12 +43,13 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
 
     const ADMIN_EMAIL = "admin@example.com";
     const ADMIN_PASSWORD = "SuperSecretAdmin123";
 
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const token = jwt.sign({ email, role: "Admin" }, process.env.JWT_SECRET);
+      const token = jwt.sign({ email, role: "Admin" }, process.env.JWT_SECRET || "secret");
       return res.status(200).json({
         message: "Admin logged in successfully",
         user: { email, role: "Admin" },
@@ -62,7 +67,7 @@ const loginUser = async (req, res) => {
 
     const token = jwt.sign(
       { email: checkUser.email, _id: checkUser._id, role: checkUser.role },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET || "secret"
     );
 
     res
@@ -74,7 +79,7 @@ const loginUser = async (req, res) => {
         token,
       });
   } catch (error) {
-    console.error(error);
+    console.error("Login Error:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -87,11 +92,11 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ msg: "Authorization token missing or malformed" });
     }
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
     req.user = decoded;
     next();
   } catch (error) {
-    console.error(error);
+    console.error("Auth Error:", error.message || error);
     res.status(401).json({ msg: "Invalid token" });
   }
 };
@@ -111,7 +116,7 @@ const changeActivationStatus = async (req, res) => {
       res.status(404).json({ message: "Failed to update user status" });
     }
   } catch (error) {
-    console.error(error);
+    console.error("Activation Error:", error.message || error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -120,7 +125,9 @@ const changeActivationStatus = async (req, res) => {
 const sendEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    const token = jwt.sign({ email }, process.env.JWT_SECRET);
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const token = jwt.sign({ email }, process.env.JWT_SECRET || "secret");
     const verifyLink = `http://localhost:5000/api/user/verify?token=${token}`;
 
     const transporter = nodemailer.createTransport({
@@ -143,7 +150,7 @@ const sendEmail = async (req, res) => {
 
     res.status(200).json({ message: "Verification email sent successfully" });
   } catch (error) {
-    console.error(error);
+    console.error("Send Email Error:", error.message || error);
     res.status(500).json({ message: "Failed to send verification email" });
   }
 };
@@ -152,6 +159,8 @@ const sendEmail = async (req, res) => {
 const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -176,7 +185,7 @@ const sendOtp = async (req, res) => {
 
     res.status(200).json({ message: "OTP sent to email" });
   } catch (error) {
-    console.error(error);
+    console.error("Send OTP Error:", error.message || error);
     res.status(500).json({ message: "Failed to send OTP" });
   }
 };
@@ -184,6 +193,8 @@ const sendOtp = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: "Email and OTP required" });
+
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
     if (user.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
@@ -196,7 +207,7 @@ const verifyOtp = async (req, res) => {
 
     res.status(200).json({ message: "Email verified successfully!" });
   } catch (error) {
-    console.error(error);
+    console.error("Verify OTP Error:", error.message || error);
     res.status(500).json({ message: "Failed to verify OTP" });
   }
 };
@@ -205,6 +216,8 @@ const verifyOtp = async (req, res) => {
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -228,7 +241,8 @@ const forgotPassword = async (req, res) => {
 
     res.json({ message: "Reset link sent to email" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Forgot Password Error:", err.message || err);
+    res.status(500).json({ message: "Failed to send reset link" });
   }
 };
 
@@ -237,6 +251,8 @@ const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
+
+    if (!token || !password) return res.status(400).json({ message: "Token and password required" });
 
     const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
 
@@ -256,7 +272,8 @@ const resetPassword = async (req, res) => {
 
     res.json({ message: "Password reset successful" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Reset Password Error:", err.message || err);
+    res.status(500).json({ message: "Failed to reset password" });
   }
 };
 
@@ -266,7 +283,7 @@ const viewExpos = async (req, res) => {
     const expos = await Expo.find();
     res.status(200).json({ expos });
   } catch (error) {
-    console.error(error);
+    console.error("View Expos Error:", error.message || error);
     res.status(500).json({ message: "Failed to fetch expos" });
   }
 };
@@ -276,7 +293,7 @@ const viewUserExpos = async (req, res) => {
     const expos = await Expo.find({ attendees: req.user._id });
     res.status(200).json({ expos });
   } catch (error) {
-    console.error(error);
+    console.error("View User Expos Error:", error.message || error);
     res.status(500).json({ message: "Failed to fetch user's expos" });
   }
 };
