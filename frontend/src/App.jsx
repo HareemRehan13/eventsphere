@@ -7,8 +7,7 @@ import ForgetPassword from "./pages/ForgotPassword";  // 👈 new import
 import OrganizerDashboard from "./admin/views/Dashboard/Dashboard.jsx";
 import AttendeeHome from "./user/pages/Home.jsx"; 
 import Home from "./user/pages/Home.jsx";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 // import Home from "./user/pages/Home.jsx"; // ye wala path check kro khi ismy to nhi msla?
 function PrivateRoute({ children, roles }) {
   const { user } = useAuth();
@@ -27,7 +26,7 @@ export default function App() {
       {/* HomeRoutes  */}
       <Route path="/Home" element={<Home/>}/>
 
-      {/* Organizer */}
+      {/* {Organizer */}
       <Route
         path="/organizer/dashboard"
         element={
@@ -35,7 +34,7 @@ export default function App() {
             <OrganizerDashboard />
           </PrivateRoute>
         }
-      />
+      /> 
 
     
 
