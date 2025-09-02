@@ -44,7 +44,7 @@ import HeaderLinks from './Header/HeaderLinks.jsx';
 // // // Sidebar
 // #############################
 
-import Sidebar from './Sidebar/Sidebar.jsx';
+import Sidebar from './Sidebar.jsx';
 
 // ##############################
 // // // Snackbar

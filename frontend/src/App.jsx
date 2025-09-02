@@ -6,6 +6,7 @@ import ForgetPassword from "./pages/ForgotPassword";  // 👈 new import
 // import ResetPassword from "./pages/ResetPassword";    // 👈 new import
 import OrganizerDashboard from "./admin/views/Dashboard/Dashboard.jsx";
 import AttendeeHome from "./user/pages/Home.jsx"; 
+import Home from "./user/pages/Home.jsx";
 // import Home from "./user/pages/Home.jsx"; // ye wala path check kro khi ismy to nhi msla?
 function PrivateRoute({ children, roles }) {
   const { user } = useAuth();
@@ -20,6 +21,9 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgetPassword />} /> {/* 👈 added */}
       {/* <Route path="/reset-password" element={<ResetPassword />} />   👈 added */}
+      
+      {/* HomeRoutes  */}
+      <Route path="/Home" element={<Home/>}/>
 
       {/* Organizer */}
       <Route
@@ -31,15 +35,7 @@ export default function App() {
         }
       />
 
-      {/* Attendee */}
-      <Route
-        path="/attendee/Home"
-        element={
-          <PrivateRoute roles={['attendee']}>
-            <AttendeeHome />
-          </PrivateRoute>
-        }
-      />
+    
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" />} />
