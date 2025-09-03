@@ -41,17 +41,19 @@ const Login = ({ onLogin }) => {
 
       setError("");
       setLoading(false);
-      if (user.role=="organizer") {
+      if (user.role=="exhibitor") {
         
-      navigate("/organizer/dashboard");
+      navigate("/ExhibitorHome");
       }
-      else if (user.role=="exhibitor") {
+      else if (user.role=="attendee") {
         
-        navigate("/organizer/dashboard");
+        navigate("/Home");
         }
        else {
         
-        navigate("/Home");
+      //  navigate("/admin/AdminHome");
+                navigate("/Home");
+
       }
 
     } catch (err) {
