@@ -17,6 +17,7 @@ const router = express.Router();
 /** ---------------- User Routes ---------------- */
 router.post("/user/register", userController.registerUser);
 router.post("/user/login", userController.loginUser);
+router.post("/user/logout", userController.logoutUser);
 router.post("/user/send-otp", userController.sendOtp);
 router.post("/user/verify-otp", userController.verifyOtp);
 router.post("/user/send-verification-email", userController.sendEmail);

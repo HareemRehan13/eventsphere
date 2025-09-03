@@ -198,6 +198,16 @@ const sendEmail = async (req, res) => {
     res.status(500).json({ message: "Failed to send verification email" });
   }
 };
+// -------------------- LOGOUT --------------------
+const logoutUser = async (req, res) => {
+  try {
+    res.clearCookie("token", { httpOnly: true });
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout Error:", error.message || error);
+    res.status(500).json({ message: "Failed to logout" });
+  }
+};
 
 // -------------------- OTP --------------------
 const sendOtp = async (req, res) => {
@@ -374,6 +384,7 @@ const userController = {
   resetPassword,
   viewExpos,
   viewUserExpos,
+  logoutUser,
 };
 
 export default userController;

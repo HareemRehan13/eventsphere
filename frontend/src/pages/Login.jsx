@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -40,8 +41,19 @@ const Login = ({ onLogin }) => {
 
       setError("");
       setLoading(false);
+      if (user.role=="organizer") {
+        
+      navigate("/organizer/dashboard");
+      }
+      else if (user.role=="exhibitor") {
+        
+        navigate("/organizer/dashboard");
+        }
+       else {
+        
+        navigate("/Home");
+      }
 
-      navigate("/");
     } catch (err) {
       console.error("Login error:", err.response || err);
       setError(err.response?.data?.message || "❌ Invalid email or password");
@@ -185,3 +197,4 @@ const Login = ({ onLogin }) => {
 };
 
 export default Login;
+
